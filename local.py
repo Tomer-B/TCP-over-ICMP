@@ -4,7 +4,7 @@ import asyncio
 import socket
 from scapy.all import *
 
-from consts import MAX_PACKET_SIZE, ETH_P_IP, TYPE_ECHO_REQUEST, LOCAL_ICMP_IP, REMOTE_ICMP_IP, LOCAL_SRC_IP
+from consts import MAX_PACKET_SIZE, ETH_P_IP, TYPE_ECHO_REQUEST, LOCAL_ICMP_IP, REMOTE_ICMP_IP, LOCAL_BPF_FILTER
 from utils import async_sendto, set_bpf
 
 
@@ -19,7 +19,7 @@ class LocalClient:
         self.input_tcp = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_IP))
         self.input_tcp.bind(('lr2l', 0))
         self.input_tcp.setblocking(False)
-        set_bpf(self.input_tcp, "tcp and src host {}".format(LOCAL_SRC_IP))
+        set_bpf(self.input_tcp, LOCAL_BPF_FILTER)
 
     def create_icmp_socket(self):
         self.icmp_socket = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
