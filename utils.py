@@ -75,9 +75,38 @@ def async_sendto(sock: socket, packet : bytes) -> None:
 
 
 def serialize_data(data : bytes, icmp_type : int) -> bytes:
+    """
+    Serialize data in order to send it over an ICMP socket.
+    ICMP layer is created using scapy's ICMP() constructor
+
+    Parameters
+    ----------
+    data : bytes
+        bytes to serialize
+    icmp_type : int
+        either TYPE_ECHO_REPLY or TYPE_ECHO_REQUEST, defined in consts.py
+
+    Returns
+    -------
+    bytes
+        Serialized data ready to be sent over the socket.
+    """
     return bytes(ICMP(seq=1, id=1, type=icmp_type)) + bytes(Ether(data)[IP])
 
 
 def deserialize_data(data : bytes) -> bytes:
+    """
+    De-Serialize data in order to send it over a TCP socket.
+
+    Parameters
+    ----------
+    data : bytes
+        bytes to serialize
+
+    Returns
+    -------
+    bytes
+        De-Serialized data ready to be sent over the socket.
+    """
     return bytes(IP(data)[Raw])
 
