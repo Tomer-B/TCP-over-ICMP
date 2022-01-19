@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Clean previous Network namespaces
+# Clean previous Network namespaces (Also deletes interfaces and settings)
 ip -all netns delete
 
-# Kill previous running
+# Kill previous running Local & Remote
 killall -9 "python3"
 
 # Create four Network namespaces for Local, Remote, and both "pipes" Local->Remote, Remote->Local
@@ -49,14 +49,6 @@ ip netns exec remote ip route add default via 3.3.3.1
 ip netns exec local_remote iptables -I INPUT -p tcp -j DROP
 ip netns exec remote_local iptables -I INPUT -p tcp -j DROP
 
-
-# # As we encapsulate packets in the tunnel - we must lower the MTU of the client and the server to accomodate the raw sends
-# ip netns exec client ifconfig c2t mtu 1400
-# ip netns exec server ifconfig s2t mtu 1400
-# # TSO can cause packets which are larger then the set mtu
-# ip netns exec client ethtool -K c2t tso off
-# ip netns exec server ethtool -K s2t tso off
-# set +ex
-
+# Run the Local & Remote
 setsid ip netns exec local_remote python3 -m local &
 setsid ip netns exec remote_local python3 -m remote &

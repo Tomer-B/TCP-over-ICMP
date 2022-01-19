@@ -1,7 +1,6 @@
 # This is the code for the unlimited reosurces remote client.
 
 import asyncio
-# from socket import socket, htons, gethostbyname, gethostname, AF_INET, SOCK_RAW, IPPROTO_ICMP, AF_PACKET, IPPROTO_TCP, IPPROTO_RAW, SOCK_STREAM, IPPROTO_IP, IP_HDRINCL
 import socket
 from scapy.all import *
 
@@ -9,7 +8,6 @@ from consts import MAX_PACKET_SIZE, ETH_P_IP, LOCAL_ICMP_IP, REMOTE_ICMP_IP, TYP
 from utils import async_sendto, set_bpf
 
 
-# This is the code for the limited reosurces local server.
 class RemoteServer:
     def __init__(self):
         self.create_icmp_socket() # De-serialize ICMP
@@ -25,31 +23,19 @@ class RemoteServer:
 
     def create_output_tcp_socket(self):
         self.output_tcp = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
-        # self.output_tcp.bind(('3.3.3.1', 0))
         self.output_tcp.setblocking(False)
-        # self.output_tcp.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
 
     def create_input_tcp_socket(self):
         self.input_tcp = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_IP))
         self.input_tcp.bind(('rl2r', 0))
         self.input_tcp.setblocking(False)
-        set_bpf(self.input_tcp, "tcp") # and dst host {}".format(LOCAL_SRC_IP))
+        set_bpf(self.input_tcp, "tcp and dst host {}".format(LOCAL_SRC_IP))
 
     def serialize_data_over_icmp(self, data : bytes) -> bytes:
-        # final_data = bytes(IP(data))
-        # pkt = Ether() / IP(src=REMOTE_ICMP_IP, dst=LOCAL_ICMP_IP) / ICMP(type=TYPE_ECHO_REPLY) / final_data
-        # return pkt.build()
-        # dummy_bytes = bytes(1) * 8 #TODO: fix? Scapy uses first 8 bytes of payload as ICMP.unused
-        # return dummy_bytes + bytes(IP(data))
-        return bytes(Ether(data)[IP])
+        return bytes(ICMP(seq=1, id=1, type=TYPE_ECHO_REPLY)) + bytes(Ether(data)[IP])
 
     def deserialize_data_over_icmp(self, data : bytes) -> bytes:
-        # final_data = IP(data)[Raw]
-        # pkt = Ether() / IP(final_data) # contains all layers including tcp
-        # pkt[IP].src = REMOTE_IP
-        # self.nat(pkt)
-        # return pkt.build()
-        return bytes(IP(data)[ICMP])
+        return bytes(IP(data)[Raw])
 
     async def run(self):
         await asyncio.wait([asyncio.create_task(self.tunnel_icmp_to_tcp()), asyncio.create_task(self.tunnel_tcp_to_icmp())])
@@ -61,7 +47,6 @@ class RemoteServer:
             print('REMOTE (ICMP->TCP): Got Data: {}'.format(data)) # Data is IP layer and beyond        
             packet = self.deserialize_data_over_icmp(data)
             print('REMOTE (ICMP->TCP): De-Serialized: {}'.format(packet))
-            # import pdb; pdb.set_trace()
             await async_sendto(self.output_tcp, packet)
             print('REMOTE (ICMP->TCP): Sent')
 
@@ -70,7 +55,6 @@ class RemoteServer:
             print('REMOTE (TCP->ICMP):')
             data = await self._loop.sock_recv(self.input_tcp, MAX_PACKET_SIZE)
             print('REMOTE (TCP->ICMP): Got Data: {}'.format(data))
-            # import pdb; pdb.set_trace()
             packet = self.serialize_data_over_icmp(data)
             print('REMOTE (TCP->ICMP): Serialized: {}'.format(packet))
             await self._loop.sock_sendall(self.icmp_socket, packet)

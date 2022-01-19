@@ -2,7 +2,6 @@
 
 import asyncio
 import socket
-# from socket import socket, htons, gethostbyname, gethostname, AF_INET, SOCK_RAW, IPPROTO_ICMP, AF_PACKET, IPPROTO_TCP, IPPROTO_RAW, SOCK_STREAM, IPPROTO_IP, IP_HDRINCL
 from scapy.all import *
 
 from consts import MAX_PACKET_SIZE, ETH_P_IP, TYPE_ECHO_REQUEST, LOCAL_ICMP_IP, REMOTE_ICMP_IP, LOCAL_SRC_IP
@@ -33,14 +32,10 @@ class LocalClient:
         self.output_tcp.setblocking(False)
 
     def serialize_data_over_icmp(self, data : bytes) -> bytes:
-        # print('LOCAL (TCP->ICMP): Payload should be: {}'.format(bytes(Ether(data)[IP])))
-        # dummy_bytes = bytes(1) * 8 #TODO: fix? Scapy uses first 8 bytes of payload as ICMP.unused
-        # return dummy_bytes + bytes(Ether(data)[IP])
-        return bytes(Ether(data)[IP])
+        return bytes(ICMP(seq=1, id=1, type=TYPE_ECHO_REQUEST)) + bytes(Ether(data)[IP])
 
     def deserialize_data_over_icmp(self, data : bytes) -> bytes:
-        # import pdb; pdb.set_trace()
-        return bytes(IP(data)[ICMP])
+        return bytes(IP(data)[Raw])
 
     async def run(self):
         await asyncio.wait([asyncio.create_task(self.tunnel_tcp_to_icmp()), asyncio.create_task(self.tunnel_icmp_to_tcp())])
@@ -50,7 +45,6 @@ class LocalClient:
             print('LOCAL (TCP->ICMP):')
             data = await self._loop.sock_recv(self.input_tcp, MAX_PACKET_SIZE)
             print('LOCAL (TCP->ICMP): Got Data: {}'.format(data))
-            # import pdb; pdb.set_trace()
             packet = self.serialize_data_over_icmp(data)
             print('LOCAL (TCP->ICMP): Serialized: {}'.format(packet))
             await self._loop.sock_sendall(self.icmp_socket, packet)
@@ -61,7 +55,6 @@ class LocalClient:
             print('LOCAL (ICMP->TCP):')
             data = await self._loop.sock_recv(self.icmp_socket, MAX_PACKET_SIZE)
             print('LOCAL (ICMP->TCP): Got Data: {}'.format(data))            
-            # import pdb; pdb.set_trace()
             packet = self.deserialize_data_over_icmp(data)
             print('LOCAL (TCP->ICMP): De-Serialized: {}'.format(packet))
             await async_sendto(self.output_tcp, packet)
