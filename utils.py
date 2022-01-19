@@ -72,3 +72,12 @@ def async_sendto(sock: socket, packet : bytes) -> None:
     final_data[IP].chksum = None
     final_data[TCP].chksum = None
     sock.sendto(final_data.build(), (dst_ip, dst_port))
+
+
+def serialize_data(data : bytes, icmp_type : int) -> bytes:
+    return bytes(ICMP(seq=1, id=1, type=icmp_type)) + bytes(Ether(data)[IP])
+
+
+def deserialize_data(data : bytes) -> bytes:
+    return bytes(IP(data)[Raw])
+

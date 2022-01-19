@@ -5,7 +5,7 @@ import socket
 from scapy.all import *
 
 from consts import MAX_PACKET_SIZE, ETH_P_IP, TYPE_ECHO_REQUEST, LOCAL_ICMP_IP, REMOTE_ICMP_IP, LOCAL_BPF_FILTER
-from utils import async_sendto, set_bpf
+from utils import async_sendto, set_bpf, serialize_data, deserialize_data
 
 
 class LocalClient:
@@ -31,34 +31,20 @@ class LocalClient:
         self.output_tcp = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
         self.output_tcp.setblocking(False)
 
-    def serialize_data_over_icmp(self, data : bytes) -> bytes:
-        return bytes(ICMP(seq=1, id=1, type=TYPE_ECHO_REQUEST)) + bytes(Ether(data)[IP])
-
-    def deserialize_data_over_icmp(self, data : bytes) -> bytes:
-        return bytes(IP(data)[Raw])
-
     async def run(self):
         await asyncio.wait([asyncio.create_task(self.tunnel_tcp_to_icmp()), asyncio.create_task(self.tunnel_icmp_to_tcp())])
 
     async def tunnel_tcp_to_icmp(self):
         while True:
-            print('LOCAL (TCP->ICMP):')
             data = await self._loop.sock_recv(self.input_tcp, MAX_PACKET_SIZE)
-            print('LOCAL (TCP->ICMP): Got Data: {}'.format(data))
-            packet = self.serialize_data_over_icmp(data)
-            print('LOCAL (TCP->ICMP): Serialized: {}'.format(packet))
+            packet = serialize_data(data, TYPE_ECHO_REQUEST)
             await self._loop.sock_sendall(self.icmp_socket, packet)
-            print('LOCAL (TCP->ICMP): Sent')
 
     async def tunnel_icmp_to_tcp(self):
         while True:
-            print('LOCAL (ICMP->TCP):')
             data = await self._loop.sock_recv(self.icmp_socket, MAX_PACKET_SIZE)
-            print('LOCAL (ICMP->TCP): Got Data: {}'.format(data))            
-            packet = self.deserialize_data_over_icmp(data)
-            print('LOCAL (TCP->ICMP): De-Serialized: {}'.format(packet))
+            packet = deserialize_data(data)
             await async_sendto(self.output_tcp, packet)
-            print('LOCAL (TCP->ICMP): Sent')
 
 async def main():
     client = LocalClient()
