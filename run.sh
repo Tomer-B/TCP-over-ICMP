@@ -24,6 +24,10 @@ ip netns add remote
 ip link add l2lr netns local type veth peer name lr2l netns local_remote
 ip link add lr2rl netns local_remote type veth peer name rl2lr netns remote_local
 ip link add rl2r netns remote_local type veth peer name r2rl netns remote
+ 
+# Lower MTU to account for extra headers
+ip netns exec local ifconfig l2lr mtu 1450
+ip netns exec remote ifconfig r2rl mtu 1450
 
 # Turn all interfaces on
 ip netns exec local ip link set l2lr up

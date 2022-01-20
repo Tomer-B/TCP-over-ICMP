@@ -11,4 +11,3 @@ LOCAL_BPF_FILTER = "tcp and src host {}".format(LOCAL_SRC_IP)
 REMOTE_BPF_FILTER = "tcp and dst host {}".format(LOCAL_SRC_IP)
 LOCAL_ICMP_IP = '2.2.2.1'
 REMOTE_ICMP_IP = '2.2.2.2'
-REMOTE_IP = '3.3.3.1'
