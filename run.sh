@@ -19,13 +19,13 @@ ip netns add remote
     # lr2rl - Local-Remote to Remote-Local
     # rl2lr - Remote-Local to Local-Remote
     # rl2r - Remote-Local to Remote
-    # r2rl - Remote to Remote-LocaL
+    # r2rl - Remote to Remote-Local
 
 ip link add l2lr netns local type veth peer name lr2l netns local_remote
 ip link add lr2rl netns local_remote type veth peer name rl2lr netns remote_local
 ip link add rl2r netns remote_local type veth peer name r2rl netns remote
  
-# Lower MTU to account for extra headers
+# Lower MTU to account for extra headers (42 bytes max + spare)
 ip netns exec local ifconfig l2lr mtu 1450
 ip netns exec remote ifconfig r2rl mtu 1450
 
@@ -49,7 +49,7 @@ ip netns exec remote ip address add dev r2rl 3.3.3.2/28
 ip netns exec local ip route add default via 1.1.1.2
 ip netns exec remote ip route add default via 3.3.3.1
 
-# Add iptables rules to drop any unnecessary packets
+# Add iptables rules to drop any unnecessary tcp packets on both ends
 ip netns exec local_remote iptables -I INPUT -p tcp -j DROP
 ip netns exec remote_local iptables -I INPUT -p tcp -j DROP
 
